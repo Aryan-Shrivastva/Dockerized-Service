@@ -32,7 +32,7 @@ jobs:
         env:
           APP_USERNAME: admin
           APP_PASSWORD: secretpassword123
-          SECRET_MESSAGE: "Test secret message for CI"
+          SECRET_MESSAGE: "This is a test secret message! You have successfully authenticated."
           PORT: 3005
           NODE_ENV: test
 
