@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "node app.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "test:ci": "node test-ci.js"
   },
   "keywords": [
     "nodejs",

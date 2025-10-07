@@ -28,8 +28,12 @@ jobs:
         run: npm ci
 
       - name: Run application tests
-        run: npm test
+        run: npm run test:ci
         env:
+          APP_USERNAME: admin
+          APP_PASSWORD: secretpassword123
+          SECRET_MESSAGE: "Test secret message for CI"
+          PORT: 3000
           NODE_ENV: test
 
   build:

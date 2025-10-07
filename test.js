@@ -1,5 +1,6 @@
 // Simple test script for the Node.js service
 const http = require('http');
+const { spawn } = require('child_process');
 
 const runTest = (testName, url, expectedStatus, expectedSubstring = null, auth = null) => {
   return new Promise((resolve, reject) => {
@@ -80,12 +81,15 @@ const runTests = async () => {
     );
 
     // Test 3: Secret route with correct auth should return secret message
+    const authUser = process.env.APP_USERNAME || 'admin';
+    const authPass = process.env.APP_PASSWORD || 'secretpassword123';
+    
     await runTest(
       'Secret route authorized test',
       '/secret',
       200,
       'successfully authenticated',
-      { username: 'admin', password: 'secretpassword123' }
+      { username: authUser, password: authPass }
     );
 
     // Test 4: Invalid route should return 404
@@ -106,7 +110,44 @@ const runTests = async () => {
   }
 };
 
-// Check if server is running before starting tests
+// Start server for testing
+const startServer = () => {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process');
+    const server = spawn('node', ['app.js'], {
+      env: { ...process.env, NODE_ENV: 'test' },
+      stdio: 'pipe'
+    });
+
+    let serverStarted = false;
+    const timeout = setTimeout(() => {
+      if (!serverStarted) {
+        server.kill();
+        reject(new Error('Server failed to start within timeout'));
+      }
+    }, 10000);
+
+    server.stdout.on('data', (data) => {
+      if (data.toString().includes('Server is running')) {
+        serverStarted = true;
+        clearTimeout(timeout);
+        console.log('Test server started successfully');
+        resolve(server);
+      }
+    });
+
+    server.stderr.on('data', (data) => {
+      console.error('Server error:', data.toString());
+    });
+
+    server.on('error', (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+  });
+};
+
+// Check if server is running
 const checkServer = () => {
   return new Promise((resolve, reject) => {
     const options = {
@@ -122,12 +163,12 @@ const checkServer = () => {
     });
 
     req.on('error', () => {
-      reject(new Error('Server is not running. Please start the server first.'));
+      resolve(false);
     });
 
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Server is not responding. Please check if it\'s running.'));
+      resolve(false);
     });
 
     req.end();
@@ -136,14 +177,32 @@ const checkServer = () => {
 
 // Main test execution
 const main = async () => {
+  let server = null;
+  
   try {
-    await checkServer();
+    const isServerRunning = await checkServer();
+    
+    if (!isServerRunning) {
+      console.log('Server not running, starting test server...');
+      server = await startServer();
+      // Wait a bit for server to fully initialize
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } else {
+      console.log('Using existing running server');
+    }
+    
     await runTests();
+    
+    if (server) {
+      console.log('\nStopping test server...');
+      server.kill();
+    }
+    
   } catch (error) {
+    if (server) {
+      server.kill();
+    }
     console.error('Error:', error.message);
-    console.log('\nTo run tests:');
-    console.log('1. Start the server: npm start');
-    console.log('2. In another terminal, run: npm test');
     process.exit(1);
   }
 };
