@@ -85,24 +85,40 @@ jobs:
     name: Deploy to Remote Server
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.SSH_PRIVATE_KEY != ''
     environment: production
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check deployment secrets
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "Warning: SSH_PRIVATE_KEY secret not configured"
+            echo "Deployment will be skipped"
+            exit 0
+          fi
+          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
+            echo "Warning: SERVER_HOST secret not configured"
+            echo "Deployment will be skipped"
+            exit 0
+          fi
+
       - name: Setup SSH
+        if: secrets.SSH_PRIVATE_KEY != ''
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add server to known hosts
+        if: secrets.SSH_PRIVATE_KEY != '' && secrets.SERVER_HOST != ''
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to server
+        if: secrets.SSH_PRIVATE_KEY != '' && secrets.SERVER_HOST != '' && secrets.SERVER_USER != ''
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             # Stop existing container if running
@@ -131,6 +147,7 @@ jobs:
           EOF
 
       - name: Health Check
+        if: secrets.SSH_PRIVATE_KEY != '' && secrets.SERVER_HOST != ''
         run: |
           sleep 10
           curl -f http://${{ secrets.SERVER_HOST }}/ || exit 1

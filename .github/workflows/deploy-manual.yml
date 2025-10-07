@@ -1,0 +1,75 @@
+name: Manual Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    name: Deploy to Remote Server
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            # Stop existing container if running
+            docker stop nodejs-service || true
+            docker rm nodejs-service || true
+            
+            # Login to GitHub Container Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull latest image
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Run new container
+            docker run -d \
+              --name nodejs-service \
+              --restart unless-stopped \
+              -p 80:3000 \
+              -e APP_USERNAME="${{ secrets.APP_USERNAME }}" \
+              -e APP_PASSWORD="${{ secrets.APP_PASSWORD }}" \
+              -e SECRET_MESSAGE="${{ secrets.SECRET_MESSAGE }}" \
+              -e NODE_ENV=production \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Clean up old images
+            docker image prune -f
+          EOF
+
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.SERVER_HOST }}/ || exit 1
+
+      - name: Deployment Success
+        run: |
+          echo "Deployment successful!"
+          echo "Application is running at: http://${{ secrets.SERVER_HOST }}"

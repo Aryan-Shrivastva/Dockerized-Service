@@ -1,8 +1,21 @@
-# GitHub Actions Secrets Configuration
+# GitHub Actions Configuration Guide
 
-This document outlines the required secrets for the CI/CD pipeline.
+This document outlines the CI/CD setup and deployment configuration.
 
-## Required Repository Secrets
+## Current Workflow Status
+
+### Active Workflows
+1. **CI - Build and Test** (`ci.yml`) - Runs on every push and PR
+   - Runs automated tests
+   - Builds and pushes Docker image to GitHub Container Registry
+   - No secrets required for basic CI
+
+2. **Manual Deploy to Production** (`deploy-manual.yml`) - Manual deployment trigger
+   - Requires secrets to be configured
+   - Can be triggered manually from GitHub Actions tab
+   - Deploys to remote server
+
+## Required Repository Secrets (for deployment only)
 
 Navigate to your GitHub repository → Settings → Secrets and variables → Actions to add these secrets:
 
