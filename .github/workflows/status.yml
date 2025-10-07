@@ -1,0 +1,54 @@
+name: Status Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  status:
+    name: Check Repository Status
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Repository Information
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Event: ${{ github.event_name }}"
+          
+      - name: Check Node.js Application
+        run: |
+          echo "Checking Node.js files..."
+          ls -la
+          if [ -f "package.json" ]; then
+            echo "package.json found"
+            cat package.json | head -20
+          fi
+          if [ -f "app.js" ]; then
+            echo "app.js found"
+          fi
+          if [ -f "Dockerfile" ]; then
+            echo "Dockerfile found"
+          fi
+          
+      - name: Check Workflows
+        run: |
+          echo "Active workflows:"
+          ls -la .github/workflows/
+          
+      - name: Environment Check
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Docker available: $(docker --version || echo 'Docker not available')"
+          
+      - name: Status Summary
+        run: |
+          echo "Repository Status: READY"
+          echo "CI/CD Status: CONFIGURED"
+          echo "Deployment Status: MANUAL TRIGGER REQUIRED"

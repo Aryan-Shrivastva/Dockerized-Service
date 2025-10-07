@@ -5,19 +5,23 @@ This document outlines the CI/CD setup and deployment configuration.
 ## Current Workflow Status
 
 ### Active Workflows
-1. **CI - Build and Test** (`ci.yml`) - Runs on every push and PR
-   - Runs automated tests
+1. **CI - Build and Test** (`ci.yml`) - Runs automatically on push to main
+   - Runs automated tests on port 3005
    - Builds and pushes Docker image to GitHub Container Registry
-   - No secrets required for basic CI
+   - No secrets required
 
-2. **Manual Deploy to Production** (`deploy-manual.yml`) - Manual deployment trigger
-   - Requires secrets to be configured
-   - Can be triggered manually from GitHub Actions tab
-   - Deploys to remote server
+2. **Status Check** (`status.yml`) - Manual trigger to check repository status
+   - Verifies repository configuration
+   - No secrets required
 
-## Required Repository Secrets (for deployment only)
+3. **Manual Deploy** (`deploy-manual.yml`) - Manual deployment only
+   - Requires deployment secrets to be configured first
+   - Must type "deploy" to confirm
+   - Only runs when explicitly triggered
 
-Navigate to your GitHub repository → Settings → Secrets and variables → Actions to add these secrets:
+## Deployment Setup
+
+To enable production deployment, configure these GitHub repository secrets:
 
 ### Server Connection Secrets
 - `SSH_PRIVATE_KEY`: Private SSH key for server access

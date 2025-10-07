@@ -3,14 +3,11 @@ name: Manual Deploy to Production
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
+      confirm_deploy:
+        description: 'Type "deploy" to confirm deployment'
         required: true
-        default: 'production'
-        type: choice
-        options:
-        - production
-        - staging
+        default: ''
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -20,11 +17,18 @@ jobs:
   deploy:
     name: Deploy to Remote Server
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    if: github.event.inputs.confirm_deploy == 'deploy'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate deployment confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm_deploy }}" != "deploy" ]; then
+            echo "Deployment cancelled - confirmation required"
+            exit 1
+          fi
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.0
