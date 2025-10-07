@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 const runTest = (testName, url, expectedStatus, expectedSubstring = null, auth = null) => {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1', // Use IPv4 explicitly instead of localhost
       port: process.env.PORT || 3000,
       path: url,
       method: 'GET',
@@ -151,7 +151,7 @@ const startServer = () => {
 const checkServer = () => {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1', // Use IPv4 explicitly instead of localhost
       port: process.env.PORT || 3000,
       path: '/',
       method: 'GET',

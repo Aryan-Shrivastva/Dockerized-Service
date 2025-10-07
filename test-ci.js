@@ -3,7 +3,7 @@ const http = require('http');
 const { spawn } = require('child_process');
 
 // Test configuration
-const TEST_PORT = process.env.PORT || 3000;
+const TEST_PORT = process.env.PORT || 3005; // Use 3005 as default
 const AUTH_USER = process.env.APP_USERNAME || 'admin';
 const AUTH_PASS = process.env.APP_PASSWORD || 'secretpassword123';
 
@@ -12,8 +12,8 @@ let testServer = null;
 const runTest = (testName, url, expectedStatus, expectedSubstring = null, auth = null) => {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'localhost',
-      port: TEST_PORT,
+      hostname: '127.0.0.1', // Use IPv4 explicitly instead of localhost
+      port: TEST_PORT, // Use TEST_PORT directly
       path: url,
       method: 'GET',
       timeout: 5000
@@ -89,8 +89,8 @@ const startTestServer = () => {
         serverStarted = true;
         clearTimeout(timeout);
         console.log('✓ Test server started successfully');
-        // Wait a bit more for full initialization
-        setTimeout(() => resolve(), 2000);
+        // Wait longer for full initialization in CI environments
+        setTimeout(() => resolve(), 3000);
       }
     });
 

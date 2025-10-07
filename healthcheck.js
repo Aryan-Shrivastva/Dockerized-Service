@@ -1,7 +1,7 @@
 const http = require('http');
 
 const options = {
-  hostname: 'localhost',
+  hostname: '127.0.0.1', // Use IPv4 explicitly
   port: process.env.PORT || 3000,
   path: '/',
   method: 'GET',

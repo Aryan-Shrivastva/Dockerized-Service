@@ -33,7 +33,7 @@ jobs:
           APP_USERNAME: admin
           APP_PASSWORD: secretpassword123
           SECRET_MESSAGE: "Test secret message for CI"
-          PORT: 3000
+          PORT: 3005
           NODE_ENV: test
 
   build:

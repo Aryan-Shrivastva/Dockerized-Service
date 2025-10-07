@@ -7,7 +7,8 @@
     "start": "node app.js",
     "dev": "node app.js",
     "test": "node test.js",
-    "test:ci": "node test-ci.js"
+    "test:ci": "node test-ci.js",
+    "test:simple": "node test-simple.js"
   },
   "keywords": [
     "nodejs",
