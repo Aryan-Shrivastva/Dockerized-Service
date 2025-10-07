@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  nodejs-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dockerized-nodejs-service
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      - NODE_ENV=development
+      - APP_USERNAME=${APP_USERNAME:-admin}
+      - APP_PASSWORD=${APP_PASSWORD:-secretpassword123}
+      - SECRET_MESSAGE=${SECRET_MESSAGE:-This is a super secret message! You have successfully authenticated.}
+    volumes:
+      # Mount source code for development (optional)
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - nodejs-network
+
+networks:
+  nodejs-network:
+    driver: bridge

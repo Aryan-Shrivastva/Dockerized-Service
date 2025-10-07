@@ -1,0 +1,151 @@
+// Simple test script for the Node.js service
+const http = require('http');
+
+const runTest = (testName, url, expectedStatus, expectedSubstring = null, auth = null) => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'localhost',
+      port: process.env.PORT || 3000,
+      path: url,
+      method: 'GET',
+      timeout: 5000
+    };
+
+    if (auth) {
+      const authString = Buffer.from(`${auth.username}:${auth.password}`).toString('base64');
+      options.headers = {
+        'Authorization': `Basic ${authString}`
+      };
+    }
+
+    const req = http.request(options, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        const statusMatch = res.statusCode === expectedStatus;
+        const contentMatch = expectedSubstring ? data.includes(expectedSubstring) : true;
+        
+        if (statusMatch && contentMatch) {
+          console.log(`✓ ${testName}: PASSED`);
+          resolve(true);
+        } else {
+          console.log(`✗ ${testName}: FAILED`);
+          console.log(`  Expected status: ${expectedStatus}, got: ${res.statusCode}`);
+          if (expectedSubstring) {
+            console.log(`  Expected content to include: "${expectedSubstring}"`);
+          }
+          console.log(`  Response: ${data}`);
+          reject(new Error(`Test failed: ${testName}`));
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.log(`✗ ${testName}: ERROR - ${err.message}`);
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      console.log(`✗ ${testName}: TIMEOUT`);
+      reject(new Error(`Test timeout: ${testName}`));
+    });
+
+    req.end();
+  });
+};
+
+const runTests = async () => {
+  console.log('Running application tests...\n');
+  
+  try {
+    // Test 1: Public route should return "Hello, world!"
+    await runTest(
+      'Public route test',
+      '/',
+      200,
+      'Hello, world!'
+    );
+
+    // Test 2: Secret route without auth should return 401
+    await runTest(
+      'Secret route unauthorized test',
+      '/secret',
+      401,
+      'Authentication required'
+    );
+
+    // Test 3: Secret route with correct auth should return secret message
+    await runTest(
+      'Secret route authorized test',
+      '/secret',
+      200,
+      'successfully authenticated',
+      { username: 'admin', password: 'secretpassword123' }
+    );
+
+    // Test 4: Invalid route should return 404
+    await runTest(
+      'Invalid route test',
+      '/nonexistent',
+      404,
+      'Route not found'
+    );
+
+    console.log('\n✓ All tests passed!');
+    process.exit(0);
+    
+  } catch (error) {
+    console.log('\n✗ Tests failed!');
+    console.error(error.message);
+    process.exit(1);
+  }
+};
+
+// Check if server is running before starting tests
+const checkServer = () => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'localhost',
+      port: process.env.PORT || 3000,
+      path: '/',
+      method: 'GET',
+      timeout: 2000
+    };
+
+    const req = http.request(options, (res) => {
+      resolve(true);
+    });
+
+    req.on('error', () => {
+      reject(new Error('Server is not running. Please start the server first.'));
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Server is not responding. Please check if it\'s running.'));
+    });
+
+    req.end();
+  });
+};
+
+// Main test execution
+const main = async () => {
+  try {
+    await checkServer();
+    await runTests();
+  } catch (error) {
+    console.error('Error:', error.message);
+    console.log('\nTo run tests:');
+    console.log('1. Start the server: npm start');
+    console.log('2. In another terminal, run: npm test');
+    process.exit(1);
+  }
+};
+
+main();
