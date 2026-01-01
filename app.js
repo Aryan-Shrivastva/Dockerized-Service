@@ -84,4 +84,10 @@ process.on('SIGINT', () => {
 
 //for testing
 
+//just checking
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  process.exit(0);
+});
+
 module.exports = app;
